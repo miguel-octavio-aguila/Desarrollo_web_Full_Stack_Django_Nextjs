@@ -1,14 +1,22 @@
+{% comment %} # This is for django {% endcomment %}
 Django==5.2.8
 djangorestframework==3.16.1
 django-redis==6.0.0
 django-environ==0.11.0
 
+{% comment %} # This is for image processing {% endcomment %}
+pillow==12.0.0
+
+{% comment %} # This is for running the server {% endcomment %}
 uvicorn==0.38.0
 
+{% comment %} # This is for running the server {% endcomment %}
 channels==4.1.0
 channels-redis==4.2.0
 
+{% comment %} # This is for serving static files {% endcomment %}
 whitenoise==6.11.0
 django-stubs==5.2.7
 
+{% comment %} # This is for database {% endcomment %}
 psycopg2==2.9.10
