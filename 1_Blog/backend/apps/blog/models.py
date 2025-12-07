@@ -21,8 +21,8 @@ class Category(models.Model):
     
     name = models.CharField(max_length=255)
     title = models.CharField(max_length=255, blank=True, null=True)
-    description = models.TextField()
-    thumbnail = models.ImageField(upload_to=category_thumbnail_directory)
+    description = models.TextField(blank=True, null=True)
+    thumbnail = models.ImageField(upload_to=category_thumbnail_directory, blank=True, null=True)
     slug = models.CharField(max_length=128)
     
     def __str__(self):
@@ -59,7 +59,7 @@ class Post(models.Model):
     status = models.CharField(max_length=10, choices=status_options, default="draft")
     
     objects = models.Manager() # Default manager
-    published = PostObject() # Manager for published posts (custom manager)
+    post_published = PostObject() # Manager for published posts (custom manager)
     
     class Meta:
         ordering = ("status", "-created_at")
