@@ -25,6 +25,7 @@ from apps.blog import urls as blog_urls
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/blog/", include(blog_urls)),
+    path("ckeditor5/", include("django_ckeditor_5.urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

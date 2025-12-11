@@ -1,8 +1,11 @@
+import uuid
+
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-import uuid
+from django_ckeditor_5.fields import CKEditor5Field
+
 
 # This function is used to store the thumbnail in a specific directory
 def blog_thumbnail_directory(instance, filename):
@@ -25,6 +28,10 @@ class Category(models.Model):
     thumbnail = models.ImageField(upload_to=category_thumbnail_directory, blank=True, null=True)
     slug = models.CharField(max_length=128)
     
+    class Meta:
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+
     def __str__(self):
         return self.name
 
@@ -45,7 +52,7 @@ class Post(models.Model):
     
     title = models.CharField(max_length=128)
     description = models.CharField(max_length=256)
-    content = models.TextField()
+    content = CKEditor5Field('Content', config_name='default', blank=True, null=True)
     thumbnail = models.ImageField(upload_to=blog_thumbnail_directory)
     
     keywords = models.CharField(max_length=128)

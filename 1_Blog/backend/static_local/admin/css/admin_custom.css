@@ -1,0 +1,20 @@
+/* Force text color for content */
+.ck-editor__editable, .ck-content {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+}
+
+/* Fix container width to prevent overflow */
+.django-ckeditor-widget {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Force toolbar wrapping */
+.ck.ck-toolbar {
+    flex-wrap: wrap !important;
+}
+
+.ck.ck-toolbar .ck.ck-toolbar__items {
+    flex-wrap: wrap !important;
+}
