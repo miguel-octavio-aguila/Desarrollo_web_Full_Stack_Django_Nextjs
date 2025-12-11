@@ -1,11 +1,14 @@
 import uuid
 
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.text import slugify
 
 from django_ckeditor_5.fields import CKEditor5Field
 
+from .utils import get_client_ip
 
 # This function is used to store the thumbnail in a specific directory
 def blog_thumbnail_directory(instance, filename):
@@ -34,6 +37,7 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Post(models.Model):
     # Manager for published posts
@@ -74,16 +78,52 @@ class Post(models.Model):
     def __str__(self):
         return self.title
 
+
 class PostViews(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    post = models.ForeignKey(Post, on_delete=models.PROTECT, related_name="post_views")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_views")
     ip_address = models.GenericIPAddressField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+class PostAnalytics(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_analytics")
+    
+    views = models.PositiveIntegerField(default=0)
+    impressions = models.PositiveIntegerField(default=0)
+    clicks = models.PositiveIntegerField(default=0)
+    clicks_through_rate = models.FloatField(default=0)
+    avg_time_on_page = models.FloatField(default=0)
+    
+    def update_click_through_rate(self):
+        if self.impressions > 0:
+            self.clicks_through_rate = (self.clicks / self.impressions) * 100
+    
+    def increment_clicks(self):
+        self.clicks += 1
+        self.update_click_through_rate()
+    
+    def increment_impressions(self):
+        self.impressions += 1
+        self.update_click_through_rate()
+    
+    def increment_views(self, request):
+        ip_address = get_client_ip(request)
+        
+        if not PostViews.objects.filter(post=self.post, ip_address=ip_address).exists():
+            PostViews.objects.create(post=self.post, ip_address=ip_address)
+            self.views += 1
+            self.save()
+    
+    class Meta:
+        verbose_name = 'Post Analytics'
+        verbose_name_plural = 'Post Analytics'
+
 
 class Heading(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    post = models.ForeignKey(Post, on_delete=models.PROTECT, related_name="headings")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="headings")
     
     title = models.CharField(max_length=128)
     slug = models.CharField(max_length=128)
@@ -107,3 +147,8 @@ class Heading(models.Model):
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
+
+@receiver(post_save, sender=Post)
+def create_post_analytics(sender, instance, created, **kwargs):
+    if created:
+        PostAnalytics.objects.create(post=instance)
