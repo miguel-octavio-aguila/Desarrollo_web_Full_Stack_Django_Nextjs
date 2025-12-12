@@ -98,13 +98,16 @@ class PostAnalytics(models.Model):
     def update_click_through_rate(self):
         if self.impressions > 0:
             self.clicks_through_rate = (self.clicks / self.impressions) * 100
+            self.save()
     
     def increment_clicks(self):
         self.clicks += 1
+        self.save()
         self.update_click_through_rate()
     
     def increment_impressions(self):
         self.impressions += 1
+        self.save()
         self.update_click_through_rate()
     
     def increment_views(self, request):
