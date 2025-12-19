@@ -8,6 +8,7 @@ from .models import Post, Heading, PostViews, PostAnalytics
 from .serializers import PostListSerializer, PostSerializer, HeadingSerializer, PostViewsSerializer
 from .utils import get_client_ip
 from .tasks import increment_post_impressions
+from core.permissions import HasValidAPIKey
 
 import redis
 from django.conf import settings
@@ -20,6 +21,8 @@ redis_client = redis.Redis(host=settings.REDIS_HOST, port=6379, db=0)
 #     serializer_class = PostListSerializer
 
 class PostListView(APIView):
+    permission_classes = [HasValidAPIKey]
+    
     def get(self, request, *args, **kwargs):
         try:
             posts = Post.post_published.all()
@@ -47,6 +50,8 @@ class PostListView(APIView):
 #     lookup_field = 'slug'
 
 class PostDetailView(APIView):
+    permission_classes = [HasValidAPIKey]
+    
     def get(self, request, slug, *args, **kwargs):
         try:
             post = Post.post_published.get(slug=slug)
@@ -77,6 +82,8 @@ class PostDetailView(APIView):
 #         return Heading.objects.filter(post__slug=post_slug)
 
 class PostHeadingsView(APIView):
+    permission_classes = [HasValidAPIKey]
+    
     def get(self, request, slug, *args, **kwargs):
         try:
             headings = Heading.objects.filter(post__slug=slug)
@@ -91,6 +98,8 @@ class PostHeadingsView(APIView):
 
 
 class IncrementPostClicksView(APIView):
+    permission_classes = [HasValidAPIKey]
+    
     def post(self, request):
         """
         Increment the number of clicks for a post based on the post slug
