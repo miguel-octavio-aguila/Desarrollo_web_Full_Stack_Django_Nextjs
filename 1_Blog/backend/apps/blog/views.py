@@ -7,6 +7,12 @@ from rest_framework import permissions
 from .models import Post, Heading, PostViews, PostAnalytics
 from .serializers import PostListSerializer, PostSerializer, HeadingSerializer, PostViewsSerializer
 from .utils import get_client_ip
+from .tasks import increment_post_impressions
+
+import redis
+from django.conf import settings
+
+redis_client = redis.Redis(host=settings.REDIS_HOST, port=6379, db=0)
 
 
 # class PostListView(ListAPIView):
@@ -22,6 +28,11 @@ class PostListView(APIView):
                 raise NotFound(detail="Posts do not exist")
             
             serialized_posts = PostListSerializer(posts, many=True).data
+            
+            for post in posts:
+                # Save the impressions on post id in redis
+                redis_client.incr(f"post:impressions:{post.id}")
+            
         except Post.DoesNotExist:
             raise NotFound(detail="Posts do not exist")
         except Exception as e:

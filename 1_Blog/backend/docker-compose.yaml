@@ -3,14 +3,17 @@ services:
   backend:
     container_name: django
     build: .
-    command: uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "python manage.py migrate && uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --reload"
+    restart: on-failure
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     depends_on:
-      - django_redis
-      - django_db
+      django_redis:
+        condition: service_started
+      django_db:
+        condition: service_healthy
 
   #Redis
   django_redis:
@@ -32,16 +35,38 @@ services:
       - "5433:5432"
     volumes:
       - .dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   
   #Celery
   celery_worker:
     container_name: blog_celery_worker
     build: .
     command: celery -A core worker --loglevel=info
+    restart: on-failure
     volumes:
       - .:/app
     ports:
       - "8001:8001"
+    depends_on:
+      django_redis:
+        condition: service_started
+      django_db:
+        condition: service_healthy
+
+  #Celery beat
+  celery_beat:
+    container_name: blog_celery_beat
+    build: .
+    command: celery -A core beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: on-failure
+    volumes:
+      - .:/app
+    ports:
+      - "8002:8002"
     depends_on:
       - django_redis
       - django_db
