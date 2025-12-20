@@ -12,6 +12,10 @@ from core.permissions import HasValidAPIKey
 
 import redis
 from django.conf import settings
+# Manual cache
+from django.core.cache import cache
+from .utils import get_client_ip
+from .tasks import increment_post_views
 
 redis_client = redis.Redis(host=settings.REDIS_HOST, port=6379, db=0)
 
@@ -23,17 +27,32 @@ redis_client = redis.Redis(host=settings.REDIS_HOST, port=6379, db=0)
 class PostListView(APIView):
     permission_classes = [HasValidAPIKey]
     
+    # @method_decorator(cache_page(60 * 1)) # Cache for 1 minute
+    
     def get(self, request, *args, **kwargs):
         try:
+            # Verify if the posts are cached
+            chached_posts = cache.get("post_list")
+            if chached_posts:
+                # Increment the impressions on post id in redis and return the cached posts
+                for post in chached_posts:
+                    redis_client.incr(f"post:impressions:{post['id']}")
+                return Response(chached_posts)
+            
+            # Get the posts if not cached
             posts = Post.post_published.all()
             
             if not posts.exists():
                 raise NotFound(detail="Posts do not exist")
             
+            # Serialize the posts
             serialized_posts = PostListSerializer(posts, many=True).data
             
+            # Set the posts in cache
+            cache.set("post_list", serialized_posts, timeout=60 * 5) # Cache for 5 minutes
+            
+            # Increment the impressions on post id in redis
             for post in posts:
-                # Save the impressions on post id in redis
                 redis_client.incr(f"post:impressions:{post.id}")
             
         except Post.DoesNotExist:
@@ -53,23 +72,33 @@ class PostDetailView(APIView):
     permission_classes = [HasValidAPIKey]
     
     def get(self, request, slug, *args, **kwargs):
+        ip_address = get_client_ip(request)
+        
         try:
+            # Verify if the data is cached
+            chached_post = cache.get(f"post_detail:{slug}")
+            if chached_post:
+                increment_post_views.delay(slug, ip_address)
+                return Response(chached_post)
+            
+            # Get the post if not cached from the db
             post = Post.post_published.get(slug=slug)
+            
+            if not post:
+                raise NotFound(detail="Post does not exist")
+            
+            # Serialize the post
+            serialized_post = PostSerializer(post).data
+            
+            # Set the post in cache
+            cache.set(f"post_detail:{slug}", serialized_post, timeout=60 * 5) # Cache for 5 minutes
+            
+            # Increment views count
+            increment_post_views.delay(slug, ip_address)
         except Post.DoesNotExist:
             raise NotFound(detail="Post does not exist")
         except Exception as e:
             raise APIException(detail=f"An unexpected error occurred: {str(e)}")
-        
-        serialized_post = PostSerializer(post).data
-        
-        # Increment views count
-        try:
-            post_analytics = PostAnalytics.objects.get(post=post)
-            post_analytics.increment_views(request)
-        except PostAnalytics.DoesNotExist:
-            raise NotFound(detail="Post analytics does not exist")
-        except Exception as e:
-            raise APIException(detail=f"An unexpected error occurred while updating post analytics: {str(e)}")
         
         return Response(serialized_post)
 

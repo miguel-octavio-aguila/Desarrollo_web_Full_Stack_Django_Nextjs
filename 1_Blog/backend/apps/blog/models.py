@@ -98,7 +98,10 @@ class PostAnalytics(models.Model):
     def update_click_through_rate(self):
         if self.impressions > 0:
             self.clicks_through_rate = (self.clicks / self.impressions) * 100
-            self.save()
+        else:
+            self.clicks_through_rate = 0
+        
+        self.save()
     
     def increment_clicks(self):
         self.clicks += 1
@@ -110,9 +113,7 @@ class PostAnalytics(models.Model):
         self.save()
         self.update_click_through_rate()
     
-    def increment_views(self, request):
-        ip_address = get_client_ip(request)
-        
+    def increment_views(self, ip_address):
         if not PostViews.objects.filter(post=self.post, ip_address=ip_address).exists():
             PostViews.objects.create(post=self.post, ip_address=ip_address)
             self.views += 1
