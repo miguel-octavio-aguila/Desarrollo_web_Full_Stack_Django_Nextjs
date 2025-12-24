@@ -72,8 +72,9 @@ class PostListView(StandardAPIView):
 class PostDetailView(StandardAPIView):
     permission_classes = [HasValidAPIKey]
     
-    def get(self, request, slug, *args, **kwargs):
+    def get(self, request):
         ip_address = get_client_ip(request)
+        slug = request.query_params.get("slug")
         
         try:
             # Verify if the data is cached
@@ -114,7 +115,8 @@ class PostDetailView(StandardAPIView):
 class PostHeadingsView(StandardAPIView):
     permission_classes = [HasValidAPIKey]
     
-    def get(self, request, slug, *args, **kwargs):
+    def get(self, request):
+        slug = request.query_params.get("slug")
         try:
             headings = Heading.objects.filter(post__slug=slug)
         except Heading.DoesNotExist:
