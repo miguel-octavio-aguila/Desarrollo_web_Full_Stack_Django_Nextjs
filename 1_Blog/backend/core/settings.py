@@ -53,6 +53,7 @@ PROJECT_APPS = [
 
 THIRD_PARTY_APPS = [
     "rest_framework",
+    "rest_framework_api",
     "channels",
     "django_ckeditor_5",
     "django_celery_results",

@@ -1,5 +1,6 @@
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from rest_framework.views import APIView
+# from rest_framework.views import APIView
+from rest_framework_api.views import StandardAPIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, APIException
 from rest_framework import permissions
@@ -24,7 +25,7 @@ redis_client = redis.Redis(host=settings.REDIS_HOST, port=6379, db=0)
 #     queryset = Post.post_published.all()
 #     serializer_class = PostListSerializer
 
-class PostListView(APIView):
+class PostListView(StandardAPIView):
     permission_classes = [HasValidAPIKey]
     
     # @method_decorator(cache_page(60 * 1)) # Cache for 1 minute
@@ -37,7 +38,7 @@ class PostListView(APIView):
                 # Increment the impressions on post id in redis and return the cached posts
                 for post in chached_posts:
                     redis_client.incr(f"post:impressions:{post['id']}")
-                return Response(chached_posts)
+                return self.paginate_response_with_extra(request, chached_posts, extra_data={"total_posts": len(chached_posts)})
             
             # Get the posts if not cached
             posts = Post.post_published.all()
@@ -60,7 +61,7 @@ class PostListView(APIView):
         except Exception as e:
             raise APIException(detail=f"An unexpected error occurred: {str(e)}")
         
-        return Response(serialized_posts)
+        return self.paginate_response_with_extra(request, serialized_posts, extra_data={"total_posts": posts.count()})
 
 
 # class PostDetailView(RetrieveAPIView):
@@ -68,7 +69,7 @@ class PostListView(APIView):
 #     serializer_class = PostSerializer
 #     lookup_field = 'slug'
 
-class PostDetailView(APIView):
+class PostDetailView(StandardAPIView):
     permission_classes = [HasValidAPIKey]
     
     def get(self, request, slug, *args, **kwargs):
@@ -78,8 +79,8 @@ class PostDetailView(APIView):
             # Verify if the data is cached
             chached_post = cache.get(f"post_detail:{slug}")
             if chached_post:
-                increment_post_views.delay(slug, ip_address)
-                return Response(chached_post)
+                increment_post_views.delay(chached_post["slug"], ip_address)
+                return self.response(chached_post)
             
             # Get the post if not cached from the db
             post = Post.post_published.get(slug=slug)
@@ -100,7 +101,7 @@ class PostDetailView(APIView):
         except Exception as e:
             raise APIException(detail=f"An unexpected error occurred: {str(e)}")
         
-        return Response(serialized_post)
+        return self.response(serialized_post)
 
 
 # class PostHeadingsView(ListAPIView):
@@ -110,7 +111,7 @@ class PostDetailView(APIView):
 #         post_slug = self.kwargs.get("slug")
 #         return Heading.objects.filter(post__slug=post_slug)
 
-class PostHeadingsView(APIView):
+class PostHeadingsView(StandardAPIView):
     permission_classes = [HasValidAPIKey]
     
     def get(self, request, slug, *args, **kwargs):
@@ -123,10 +124,10 @@ class PostHeadingsView(APIView):
         
         serialized_headings = HeadingSerializer(headings, many=True).data
         
-        return Response(serialized_headings)
+        return self.response(serialized_headings)
 
 
-class IncrementPostClicksView(APIView):
+class IncrementPostClicksView(StandardAPIView):
     permission_classes = [HasValidAPIKey]
     
     def post(self, request):
@@ -148,7 +149,7 @@ class IncrementPostClicksView(APIView):
         except Exception as e:
             raise APIException(detail=f"An unexpected error occurred while updating post analytics: {str(e)}")
         
-        return Response({
+        return self.response({
             "message": "Post clicks incremented successfully",
             "clicks": post_analytics.clicks 
         })
