@@ -120,7 +120,7 @@ class PostHeadingsView(StandardAPIView):
         try:
             headings = Heading.objects.filter(post__slug=slug)
         except Heading.DoesNotExist:
-            raise NotFound(detail="Headings do not exist")
+            raise NotFound(detail="Headings not found")
         except Exception as e:
             raise APIException(detail=f"An unexpected error occurred: {str(e)}")
         
