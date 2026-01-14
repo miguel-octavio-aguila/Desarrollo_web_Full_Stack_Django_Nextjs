@@ -58,6 +58,7 @@ THIRD_PARTY_APPS = [
     "django_ckeditor_5",
     "django_celery_results",
     "django_celery_beat",
+    "storages",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + PROJECT_APPS + THIRD_PARTY_APPS
@@ -193,14 +194,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_LOCATION = "static"
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static_local"),
-]
-MEDIA_URL = "media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+# STATIC_LOCATION = "static"
+# STATIC_URL = "static/"
+# STATIC_ROOT = os.path.join(BASE_DIR, "static")
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, "static_local"),
+# ]
+# MEDIA_URL = "media/"
+# MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -266,3 +267,43 @@ CELERY_TIMEZONE = "America/Mexico_City"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {}
 
+# AWS CONFIG
+AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
+AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
+
+# Default storage configuration
+# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "core.storage_backends.StaticStorage",
+    },
+}
+
+# Privacy settings and permissions
+AWS_QUERYSTRING_AUTH = False # Prevents adding query strings to the URL
+AWS_S3_FILE_OVERWRITE = False # Prevents overwriting existing files
+AWS_DEFAULT_ACL = "public-read" # Sets default ACL to public read
+AWS_QUERYSTRING_EXPIRE = 5 # Sets query string expiration time
+
+# S3 Object Parameters
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400", # Sets cache control to 1 day
+}
+
+# Static files configuration
+STATIC_LOCATION = "static"
+STATIC_URL = f"{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
+# STATICFILES_STORAGE = "core.storage_backends.StaticStorage"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+# Media files configuration
+MEDIA_LOCATION = "media"
+MEDIA_URL = f"{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/"
+MEDIA_ROOT = MEDIA_URL
