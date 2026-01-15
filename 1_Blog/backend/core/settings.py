@@ -277,19 +277,10 @@ AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazo
 # Default storage configuration
 # DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-    },
-    "staticfiles": {
-        "BACKEND": "core.storage_backends.StaticStorage",
-    },
-}
-
 # Privacy settings and permissions
 AWS_QUERYSTRING_AUTH = False # Prevents adding query strings to the URL
 AWS_S3_FILE_OVERWRITE = False # Prevents overwriting existing files
-AWS_DEFAULT_ACL = "public-read" # Sets default ACL to public read
+AWS_DEFAULT_ACL = None # Sets default ACL to none
 AWS_QUERYSTRING_EXPIRE = 5 # Sets query string expiration time
 
 # S3 Object Parameters
@@ -307,3 +298,12 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_LOCATION = "media"
 MEDIA_URL = f"{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/"
 MEDIA_ROOT = MEDIA_URL
+
+STORAGES = {
+    "default": {
+        "BACKEND": "core.storage_backends.PublicMediaStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "core.storage_backends.StaticStorage",
+    },
+}
