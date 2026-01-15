@@ -4,7 +4,7 @@ services:
     container_name: django
     build: .
     command: sh -c "python manage.py migrate && uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --reload"
-    restart: on-failure
+    restart: always
     volumes:
       - .:/app
     ports:
@@ -19,6 +19,7 @@ services:
   django_redis:
     image: redis
     container_name: django_redis
+    restart: always
     ports:
       - 6379:6379
 
@@ -36,10 +37,11 @@ services:
     volumes:
       - .dbdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U django -d django_db"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U django -d django_db -h 127.0.0.1"]
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
   
   #Celery
   celery_worker:
