@@ -49,6 +49,7 @@ DJANGO_APPS = [
 
 PROJECT_APPS = [
     "apps.blog",
+    "apps.media",
 ]
 
 THIRD_PARTY_APPS = [

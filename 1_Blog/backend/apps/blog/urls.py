@@ -11,5 +11,5 @@ urlpatterns = [
     path("posts/", PostListView.as_view(), name="post-list"),
     path("posts/clicks/", IncrementPostClicksView.as_view(), name="increment-post-clicks"),
     path("post/", PostDetailView.as_view(), name="post-detail"),
-    path("posts/headings/", PostHeadingsView.as_view(), name="post-headings"),
+    path("post/headings/", PostHeadingsView.as_view(), name="post-headings"),
 ]

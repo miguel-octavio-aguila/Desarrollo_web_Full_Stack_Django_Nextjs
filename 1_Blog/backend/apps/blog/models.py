@@ -12,13 +12,17 @@ from core.storage_backends import PublicMediaStorage
 
 from .utils import get_client_ip
 
+from apps.media.models import Media
+
 # This function is used to store the thumbnail in a specific directory
 def blog_thumbnail_directory(instance, filename):
-    return "thumbnails/blog/{0}/{1}".format(instance.title, filename)
+    sanitized_title = instance.title.replace(" ", "_")
+    return "thumbnails/blog/{0}/{1}".format(sanitized_title, filename)
 
 # This function is used to store the thumbnail in a specific directory
 def category_thumbnail_directory(instance, filename):
-    return "thumbnails/blog_categories/{0}/{1}".format(instance.name, filename)
+    sanitized_name = instance.name.replace(" ", "_")
+    return "thumbnails/blog_categories/{0}/{1}".format(sanitized_name, filename)
 
 class Category(models.Model):
     # This field is used to create a unique identifier for the category
@@ -59,7 +63,7 @@ class Post(models.Model):
     title = models.CharField(max_length=128)
     description = models.CharField(max_length=256)
     content = CKEditor5Field('Content', config_name='default', blank=True, null=True)
-    thumbnail = models.ImageField(upload_to=blog_thumbnail_directory, storage=PublicMediaStorage())
+    thumbnail = models.ForeignKey(Media, on_delete=models.SET_NULL, related_name="post_thumbnail", null=True, blank=True)
     
     keywords = models.CharField(max_length=128)
     slug = models.CharField(max_length=128)

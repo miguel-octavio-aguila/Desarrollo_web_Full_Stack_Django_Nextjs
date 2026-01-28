@@ -33,12 +33,16 @@ class PostListView(StandardAPIView):
     def get(self, request, *args, **kwargs):
         try:
             # Verify if the posts are cached
-            chached_posts = cache.get("post_list")
-            if chached_posts:
-                # Increment the impressions on post id in redis and return the cached posts
-                for post in chached_posts:
-                    redis_client.incr(f"post:impressions:{post['id']}")
-                return self.paginate_response_with_extra(request, chached_posts, extra_data={"total_posts": len(chached_posts)})
+            cached_data = cache.get("post_list")
+            if cached_data:
+                serialized_posts = cached_data["posts"]
+                post_ids = cached_data["post_ids"]
+                
+                # Increment the impressions on post id in redis
+                for post_id in post_ids:
+                    redis_client.incr(f"post:impressions:{post_id}")
+                
+                return self.paginate_response_with_extra(request, serialized_posts, extra_data={"total_posts": len(serialized_posts)})
             
             # Get the posts if not cached
             posts = Post.post_published.all()
@@ -49,19 +53,22 @@ class PostListView(StandardAPIView):
             # Serialize the posts
             serialized_posts = PostListSerializer(posts, many=True).data
             
-            # Set the posts in cache
-            cache.set("post_list", serialized_posts, timeout=60 * 5) # Cache for 5 minutes
+            # Get post IDs for caching and impressions
+            post_ids = list(posts.values_list("id", flat=True))
+            
+            # Set the serialized posts and IDs in cache
+            cache.set("post_list", {"posts": serialized_posts, "post_ids": post_ids}, timeout=60 * 5)  # Cache for 5 minutes
             
             # Increment the impressions on post id in redis
-            for post in posts:
-                redis_client.incr(f"post:impressions:{post.id}")
+            for post_id in post_ids:
+                redis_client.incr(f"post:impressions:{post_id}")
             
         except Post.DoesNotExist:
             raise NotFound(detail="Posts do not exist")
         except Exception as e:
             raise APIException(detail=f"An unexpected error occurred: {str(e)}")
         
-        return self.paginate_response_with_extra(request, serialized_posts, extra_data={"total_posts": posts.count()})
+        return self.paginate_response_with_extra(request, serialized_posts, extra_data={"total_posts": len(serialized_posts)})
 
 
 # class PostDetailView(RetrieveAPIView):
