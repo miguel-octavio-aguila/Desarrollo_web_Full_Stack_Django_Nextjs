@@ -13,6 +13,8 @@ from core.storage_backends import PublicMediaStorage
 from .utils import get_client_ip
 
 from apps.media.models import Media
+from apps.media.serializers import MediaSerializer
+from django.utils.html import format_html
 
 # This function is used to store the thumbnail in a specific directory
 def blog_thumbnail_directory(instance, filename):
@@ -34,7 +36,7 @@ class Category(models.Model):
     name = models.CharField(max_length=255)
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    thumbnail = models.ImageField(upload_to=category_thumbnail_directory, blank=True, null=True)
+    thumbnail = models.ForeignKey(Media, on_delete=models.SET_NULL, related_name="blog_category_thumbnail", null=True, blank=True)
     slug = models.CharField(max_length=128)
     
     class Meta:
@@ -43,6 +45,16 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    def thumbnail_preview(self):
+        if self.thumbnail:
+            serializer = MediaSerializer(instance=self.thumbnail)
+            url = serializer.data.get("presigned_url")
+            if url:
+                return format_html('<img src="{}" width="100" height="100" />', url)
+        return "No thumbnail"
+    
+    thumbnail_preview.short_description = "Thumbnail Preview"
 
 
 class Post(models.Model):
@@ -84,6 +96,15 @@ class Post(models.Model):
     def __str__(self):
         return self.title
 
+    def thumbnail_preview(self):
+        if self.thumbnail:
+            serializer = MediaSerializer(instance=self.thumbnail)
+            url = serializer.data.get("presigned_url")
+            if url:
+                return format_html('<img src="{}" width="100" height="100" />', url)
+        return "No thumbnail"
+    
+    thumbnail_preview.short_description = "Thumbnail Preview"
 
 class PostViews(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

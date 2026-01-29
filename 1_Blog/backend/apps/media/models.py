@@ -18,6 +18,15 @@ class Media(models.Model):
     key = models.CharField(max_length=255)
     media_type = models.CharField(max_length=30, choices=MEDIA_TYPES)
     
+    # ForeignKey to Post (optional, allows media to be associated with a post)
+    post = models.ForeignKey(
+        'blog.Post',
+        on_delete=models.CASCADE,
+        related_name='media',
+        null=True,
+        blank=True
+    )
+    
     class Meta:
         verbose_name = 'Media'
         verbose_name_plural = 'Media'
